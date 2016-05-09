@@ -3,6 +3,7 @@ from linebot.settings.base import *
 import os
 
 DEBUG = False
+ALLOWED_HOSTS = ['linebot.carlcarl.me']
 
 LINE_BOT_SETTINGS = {
     'bot1': {
@@ -11,3 +12,5 @@ LINE_BOT_SETTINGS = {
         'MID': os.environ.get('BOT1_MID'),
     },
 }
+
+SECRET_KEY = os.environ.get('SECRET_KEY')
