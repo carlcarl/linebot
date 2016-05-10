@@ -1,4 +1,4 @@
 *.pyc
 local.py
 .idea/
-*.sqlite
+*.sqlite3
