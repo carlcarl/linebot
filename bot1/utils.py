@@ -8,7 +8,7 @@ import requests
 def legal_signature(request_signature, msg, secret):
     dig = hmac.new(secret.encode('utf-8'), msg, digestmod=hashlib.sha256).digest()
     computed_signature = base64.b64encode(dig).decode()
-    return computed_signature == request_signature
+    return hmac.compare_digest(computed_signature, request_signature)
 
 
 def create_msg_headers(channel_id, channel_secret, mid):
