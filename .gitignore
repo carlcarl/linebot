@@ -2,3 +2,4 @@
 local.py
 .idea/
 *.sqlite3
+*.log
