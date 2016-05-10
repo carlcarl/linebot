@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseBadRequest
 from django.http import HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 
@@ -17,20 +17,20 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 def index(request):
     if request.method != 'POST':
-        return HttpResponseNotAllowed(['GET'])
+        return HttpResponseNotAllowed(['POST'])
 
     logger.debug(request.body)
     request_signature = request.META['HTTP_X_LINE_CHANNELSIGNATURE']
     logger.debug(request_signature)
     channel_secret = settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_SECRET']
     if not legal_signature(request_signature, request.body, channel_secret):
-        return HttpResponseNotFound
+        return HttpResponseBadRequest()
 
-    json_data = json.loads(request.body.decode('utf-8'))
     channel_id = settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_ID']
     mid = settings.LINE_BOT_SETTINGS['bot1']['MID']
     headers = create_msg_headers(channel_id, channel_secret, mid)
 
+    json_data = json.loads(request.body.decode('utf-8'))
     request_content = json_data['result'][0]['content']
     from_mid = request_content['from']
     from_text = request_content['text']
