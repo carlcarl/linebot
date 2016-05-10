@@ -19,9 +19,7 @@ def index(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
-    logger.debug(request.body)
     request_signature = request.META['HTTP_X_LINE_CHANNELSIGNATURE']
-    logger.debug(request_signature)
     channel_secret = settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_SECRET']
     if not legal_signature(request_signature, request.body, channel_secret):
         return HttpResponseBadRequest()
@@ -39,6 +37,5 @@ def index(request):
     response = send_msg(headers, [from_mid], content='haha')
     if response.status_code != 200:
         logger.error(str(response))
-    logger.debug(response.text)
 
     return HttpResponse()
