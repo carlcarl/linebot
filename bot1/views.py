@@ -1,17 +1,21 @@
+import logging
+
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 
-import json
-import logging
-
-from .utils import legal_signature
-from .utils import create_msg_headers
-from .utils import send_msg
+from linebot import LineBotApi, WebhookParser
+from linebot.exceptions import InvalidSignatureError, LineBotApiError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 logger = logging.getLogger(__name__)
+
+line_bot_api = LineBotApi(settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_ACCESS_TOKEN'])
+parser = WebhookParser(settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_SECRET'])
 
 
 @csrf_exempt
@@ -19,23 +23,23 @@ def index(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
-    request_signature = request.META['HTTP_X_LINE_CHANNELSIGNATURE']
-    channel_secret = settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_SECRET']
-    if not legal_signature(request_signature, request.body, channel_secret):
+    request_signature = request.META['HTTP_X_LINE_SIGNATURE']
+
+    request_body = request.body.decode('utf-8')
+
+    try:
+        events = parser.parse(request_body, request_signature)
+    except InvalidSignatureError:
+        return HttpResponseForbidden()
+    except LineBotApiError:
         return HttpResponseBadRequest()
 
-    channel_id = settings.LINE_BOT_SETTINGS['bot1']['CHANNEL_ID']
-    mid = settings.LINE_BOT_SETTINGS['bot1']['MID']
-    headers = create_msg_headers(channel_id, channel_secret, mid)
-
-    json_data = json.loads(request.body.decode('utf-8'))
-    request_content = json_data['result'][0]['content']
-    from_mid = request_content['from']
-    from_text = request_content['text']
-    logger.info(from_text)
-
-    response = send_msg(headers, [from_mid], content='haha')
-    if response.status_code != 200:
-        logger.error(str(response))
+    for event in events:
+        if isinstance(event, MessageEvent):
+            if isinstance(event.message, TextMessage):
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=event.message.text)
+                )
 
     return HttpResponse()
